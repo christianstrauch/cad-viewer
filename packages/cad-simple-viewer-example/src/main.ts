@@ -22,8 +22,7 @@ class CadViewerApp {
         // Actually 'baseUrl' here isn't required. Override default 'baseUrl'
         // value is just for demostration.
         AcApDocManager.createInstance({
-          canvas: this.canvas,
-          baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
+          canvas: this.canvas //, baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
         })
         this.isInitialized = true
       } catch (error) {
@@ -34,14 +33,52 @@ class CadViewerApp {
   }
 
   private setupFileHandling() {
-    // File input change event
-    this.fileInput.addEventListener('change', event => {
-      const file = (event.target as HTMLInputElement).files?.[0]
-      if (file) {
-        this.loadFile(file)
-      }
-      this.fileInput.value = ''
-    })
+    const paramsString = window.location.search;
+    if (paramsString == null || !paramsString || !paramsString.trim())
+	    return true;
+
+    const urlParams = new URLSearchParams(paramsString);
+
+    if (urlParams == null || !urlParams.has("f") || !urlParams.get("f"))
+    {    
+    	this.fileInput.addEventListener('change', event => {
+      		const file = (event.target as HTMLInputElement).files?.[0]
+      		if (file) {
+        		this.loadFile(file)
+      		}
+      		this.fileInput.value = ''
+    	})
+	return true;
+    }
+
+    const fURL = urlParams.get("f");
+
+    if (fURL == null) return false;
+    const fName = 
+	urlParams != null
+        && urlParams.has("name") 
+    	&& urlParams.get("name") != null 
+		? urlParams.get("name") + ".dxf" 
+		: "Plan.dxf";
+    const r = new Request(fURL);
+    const self = this;
+    window.fetch(r)
+    	.then((response) => {
+		if (!response.ok) {
+			alert(response.status);
+
+		}
+		return response.blob();
+	})
+	.then((responseblob) => {
+
+		const f = new File(
+			[responseblob], 
+			fName,
+			{ 'type': 'image/vnd.dxf' });
+		self.loadFile(f);
+		self.fileInput.value = '';
+	});
   }
 
   private async loadFile(file: File) {
